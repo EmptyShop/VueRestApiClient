@@ -12,5 +12,6 @@ app.use(router)
 
 app.mount('#app')
 
-app.provide('urlAPI','http://192.168.1.64:5000/contact');
+app.provide('urlAPI','http://192.168.1.66:5000/contact');
+app.provide('urlAPINet','https://localhost:7153/contacts'); //API alterna
 app.provide('emailPattern', /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/);

@@ -1,15 +1,30 @@
 <script setup>
 import {ref, onMounted, inject} from 'vue'
 import { RouterLink } from 'vue-router';
+import { createLink, homeLink } from '@/router';
 
-const urlAPI = inject('urlAPINet');
+const urlAPI = inject('urlAPINet'); // URL de la API alterna
 const contacts = ref(null);
 
-async function getContacts(){
-    const res = await fetch(urlAPI);
-    const data = await res.json();
+// Actualizo las rutas de los enlaces del menú
+// para que apunten a las vistas de la API alterna
+if (homeLink.value != "/homeNet") {
+    homeLink.value = "/homeNet";
+}
+if (createLink.value != "/createNet") {
+    createLink.value = "/createNet";
+}
 
-    contacts.value = data;
+async function getContacts(){
+    try{
+        const res = await fetch(urlAPI);
+        const data = await res.json();
+
+        contacts.value = data;
+    } catch (error) {
+        console.error("Error fetching contacts:", error);
+        alert("Could not connect to fetch contacts.");
+    }
 }
 
 async function eliminar(id, fullname){

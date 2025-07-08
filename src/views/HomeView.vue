@@ -1,4 +1,5 @@
 <script setup>
+import router from '@/router';
 import {ref, onMounted, inject} from 'vue'
 import { RouterLink } from 'vue-router';
 
@@ -6,10 +7,26 @@ const urlAPI = inject('urlAPI');
 const contacts = ref(null);
 
 async function getContacts(){
-    const res = await fetch(urlAPI);
-    const data = await res.json();
+    try {
+        const res = await fetch(urlAPI);
+        
+        if (!res.ok || res.status < 200 || res.status >= 300){
+            console.log(res.status);
+        }
+        const data = await res.json();
 
-    contacts.value = data;
+        contacts.value = data;
+
+        // Al inicio hay una pantalla de carga que se oculta al cargar los contactos
+        var loadingScreen = document.querySelector('.loading');
+        loadingScreen.style.opacity = 0;
+        setTimeout(()=>{
+	        loadingScreen.style.display = 'none';
+        },1000);
+    } catch (error) {
+        console.log("Error fetching contacts: ", error.name, error.message);
+        router.push({name: 'homeNet'}); // redirecciona a la página de inicio alterna
+    }
 }
 
 async function eliminar(id, fullname){
@@ -40,6 +57,28 @@ onMounted(() => {
 });
 </script>
 
+<style>
+.loading{
+  position : fixed;
+  top : 50%;
+  left : 50%;
+  height : 99%;
+  width : 100%;
+  transform : translate(-50%,-50%);    
+  background-color: #DCFFFF;
+  transition : opacity ease-in-out 1s;
+}
+.loading-header {
+  height : 90%;
+  color : gray;
+  font-family : consolas;
+  font-size : 30px;
+  display : flex;
+  justify-content: center;
+  align-items : center;
+}
+</style>
+
 <template>
     <div class="row">
         <div class="col-lg-8 offset-lg-2">
@@ -69,5 +108,8 @@ onMounted(() => {
                 </table>
             </div>
         </div>
+    </div>
+    <div class="loading">
+        <h1 class = "loading-header">Loading...</h1>
     </div>
 </template>
