@@ -18,7 +18,7 @@ Este proyecto lo hice como parte de un conjunto de aplicaciones que consumen una
   * En el archivo `main.js`, ubicado en `src`, asigné las rutas a la aplicación y generé una variable para la URL de la API externa.
   * En el componente `router` ubicado en `src/router/index.js` configuré las rutas de la aplicación de la siguiente forma:
 
-    ```sh
+    ```js
     const router = createRouter({
       history: createWebHistory(import.meta.env.BASE_URL),
       routes: [
@@ -62,8 +62,100 @@ Para este proyecto me basé en un video tutorial que muestra cómo consumir serv
   * [Named Routes](https://router.vuejs.org/guide/essentials/named-routes.html)
   * [Dynamic Route Matching with Params](https://router.vuejs.org/guide/essentials/dynamic-matching.html)
 
+# Actualización
+Agregué una ruta alterna de la API para un escenario donde el servidor principal (el que programé en Python) no estuviera ejecutándose. En este caso desarrollé otra API en c# que accede a la misma base de datos. Esta API alterna es un poco distinta a la principal (para POST y PUT devuelve respuestas diferentes), por lo que cuando la vista principal `views/HomeView.vue` detecta que no hay conexión, redirige a la vista `viewsNet/HomeView.vue`. A partir de esta vista se usa la API alterna en todas las operaciones.
+
+## Lo implementé así:
+En `main.js`agregué la siguiente línea:
+
+```js
+app.provide('urlAPINet','https://localhost:7153/contacts');
+```
+
+En `router/index.js` agregué las rutas para la API alterna:
+
+```js
+{
+  path: '/HomeNet',
+  name: 'homeNet',
+  component: () => import('@/viewsNet/HomeView.vue')
+},
+{
+  path: '/createNet',
+  name: 'createNet',
+  component: () => import('@/viewsNet/CreateView.vue')
+},
+{
+  path: '/editNet/:id(\\d+)',
+  name: 'editNet',
+  component: () => import('@/viewsNet/EditView.vue')
+},
+```
+
+Además, declaré 2 referencias para usarlas en el menú para las entradas de Home y Create:
+
+```js
+export const homeLink = ref("/");
+export const createLink = ref("/create");
+```
+
+En `App.vue` importo las variables anteriores y las uso para actualizar el menú de la página:
+
+```js
+import { homeLink, createLink } from './router';
+
+...
+
+<li class="nav-item">
+  <RouterLink :to="homeLink" class="nav-link active" aria-current="page" href="#">Contact List</RouterLink>
+</li>
+<li class="nav-item">
+  <RouterLink :to="createLink" class="nav-link" href="#">Create</RouterLink>
+</li>
+```
+
+En `views/HomeView.vue` cuando no se conecta a la API principal atrapo el error y redirecciono a la API alterna:
+
+```js
+async function getContacts(){
+    try {
+        const res = await fetch(urlAPI);
+        
+        if (!res.ok || res.status < 200 || res.status >= 300){
+            console.log(res.status);
+        }
+        const data = await res.json();
+
+        contacts.value = data;
+
+        /* Al inicio de la vista pongo un mensaje de loading para esperar
+           mientras carga la API. Cuando recibe los datos quito el
+           div de loading */
+        var loadingScreen = document.querySelector('.loading');
+        loadingScreen.style.opacity = 0;
+        setTimeout(()=>{
+	        loadingScreen.style.display = 'none';
+        },1000);
+    } catch (error) {
+        console.log("Error fetching contacts: ", error.name, error.message);
+        router.push({name: 'homeNet'});  //redirecciono a la vista alterna
+    }
+}
+```
+
+Las vistas alternas hacen referencia a la API de c#: `const urlAPI = inject('urlAPINet');`. Además actualizo las rutas para el menú:
+
+```js
+if (homeLink.value != "/homeNet") {
+    homeLink.value = "/homeNet";
+}
+if (createLink.value != "/createNet") {
+    createLink.value = "/createNet";
+}
+```
+
 # Lo que sigue
-El alcance de este proyecto es comparar el desempeño y las implementaciones de cada versión de app cliente para consumo de servicios Restful que tengo en este repositorio ([Angular](https://github.com/EmptyShop/AngularRestApiClient), [React](https://github.com/EmptyShop/ReactRestApiClient), Vue y [Kotlin](https://github.com/EmptyShop/KotlinRestApiClient)). Por lo que no tengo planeado agregar o modificar funcionalidades.
+El alcance de este proyecto es comparar el desempeño y las implementaciones de cada versión de app cliente para consumo de servicios Restful que tengo en este repositorio ([Angular](https://github.com/EmptyShop/AngularRestApiClient), [React](https://github.com/EmptyShop/ReactRestApiClient), Vue y [Kotlin](https://github.com/EmptyShop/KotlinRestApiClient)). Por lo que no tengo planeado agregar o modificar funcionalidades muy seguido.
 
 Siéntete libre de comentar y sugerir cosas para esta app.
 
